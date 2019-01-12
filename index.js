@@ -22,7 +22,8 @@ function loader(source) {
     wrapOutput: false,
     verbose: false,
     ignoreImages: false,
-    excludeImageRegex: undefined
+    excludeImageRegex: undefined,
+    libraryTarget: 'es6'
   };
 
   // webpack 4 'this.options' was deprecated in webpack 3 and removed in webpack 4
@@ -70,18 +71,36 @@ function loader(source) {
 
   // Build the returned string
   let returnedString;
-  if (options.wrapOutput) {
-    returnedString = "var dust = require('" + options.dustAlias + "/lib/dust'); "
-      + deps.join(' ') + template
-      + "var fn = " + defaultWrapperGenerator(name)
-      + '; fn.templateName = "' + name + '"; '
-      + "module.exports = fn;";
+  if (options.libraryTarget === 'es6') {
+    if (options.wrapOutput) {
+      returnedString = "function dustComp (dust) { "
+        + deps.join(' ') + template
+        + "var fn = " + defaultWrapperGenerator(name)
+        + '; fn.templateName = "' + name + '"; '
+        + '}; '
+        + "export default dustComp;";
+    } else {
+      returnedString = "function dustComp (dust) { "
+        + deps.join(' ')
+        + 'var template = ' + template + ';'
+        + 'template.templateName = "' + name + '";'
+        + '}; '
+        + "export default dustComp;";
+    }
   } else {
-    returnedString = "var dust = require('" + options.dustAlias + "'); "
-      + deps.join(' ')
-      + 'var template = ' + template + ';'
-      + 'template.templateName = "' + name + '";'
-      + "module.exports = template;";
+    if (options.wrapOutput) {
+      returnedString = "var dust = require('" + options.dustAlias + "/lib/dust'); "
+        + deps.join(' ') + template
+        + "var fn = " + defaultWrapperGenerator(name)
+        + '; fn.templateName = "' + name + '"; '
+        + "module.exports = fn;";
+    } else {
+      returnedString = "var dust = require('" + options.dustAlias + "'); "
+        + deps.join(' ')
+        + 'var template = ' + template + ';'
+        + 'template.templateName = "' + name + '";'
+        + "module.exports = template;";
+    }
   }
 
   // Return the string to be used
